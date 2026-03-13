@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Source Finder — Primary Source Discovery Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,700&family=Overpass+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#F7F7F5;--text:#1a1a1a;--text-muted:#6B7280;
+    --card-bg:#fff;--card-border:#EBEBEB;--card-shadow:0 4px 16px rgba(0,0,0,0.06);
+    --input-bg:#fff;--input-border:#D1D5DB;
+    --accent:#F59E0B;--accent-hover:#D97706;
+    --header-bg:#18181B;--header-text:#E4E4E7;
+    --tag-bg:#F3F4F6;--tag-text:#4B5563;--link:#1D4ED8;
+    --tab-inactive:#9CA3AF;
+    --c-loc:#B45309;--c-aic:#BE185D;--c-si:#059669;--c-dpla:#7C3AED;
+    --font-serif:'Newsreader','Georgia',serif;
+    --font-mono:'Overpass Mono',monospace;
+    --radius:10px;--radius-sm:6px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--font-serif);background:var(--bg);color:var(--text);line-height:1.6}
+  header{background:var(--header-bg);color:var(--header-text);padding:16px 0;position:sticky;top:0;z-index:100}
+  .hi{max-width:1000px;margin:0 auto;padding:0 24px;display:flex;align-items:baseline;justify-content:space-between}
+  .hl{display:flex;align-items:baseline;gap:12px}
+  header h1{font-family:var(--font-serif);font-size:1.3rem;font-weight:700}
+  header h1 span{color:var(--accent)}
+  header .sub{font-family:var(--font-mono);font-size:.65rem;color:#9CA3AF;text-transform:uppercase;letter-spacing:.08em}
+  .hdr-right{display:flex;align-items:center;gap:10px}
+  .badge{font-family:var(--font-mono);font-size:.6rem;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em;background:rgba(245,158,11,.15);color:var(--accent)}
+  .gear-btn{background:none;border:none;cursor:pointer;font-size:1.1rem;color:#9CA3AF;transition:color .15s;padding:4px}.gear-btn:hover{color:var(--accent)}
+  main{max-width:1000px;margin:0 auto;padding:24px 24px 80px}
+
+  /* Setup screen */
+  .setup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px}
+  .setup-card{background:var(--card-bg);border-radius:14px;padding:36px 32px;max-width:520px;width:100%;box-shadow:0 24px 48px rgba(0,0,0,.15)}
+  .setup-card h2{font-family:var(--font-serif);font-size:1.3rem;font-weight:700;margin-bottom:4px}
+  .setup-card h2 span{color:var(--accent)}
+  .setup-card .setup-sub{font-family:var(--font-mono);font-size:.7rem;color:var(--text-muted);margin-bottom:24px;line-height:1.5}
+  .setup-field{margin-bottom:18px}
+  .setup-field label{font-family:var(--font-mono);font-size:.72rem;font-weight:600;display:block;margin-bottom:5px;color:var(--text)}
+  .setup-field .field-note{font-family:var(--font-mono);font-size:.62rem;color:var(--text-muted);margin-bottom:6px;line-height:1.4}
+  .setup-field input{width:100%;font-family:var(--font-mono);font-size:.78rem;padding:10px 12px;border:1.5px solid var(--input-border);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text);outline:none}
+  .setup-field input:focus{border-color:var(--accent)}
+  .setup-field input::placeholder{color:#B0B0B0}
+  .setup-field .optional{font-family:var(--font-mono);font-size:.58rem;color:#B0B0B0;text-transform:uppercase;letter-spacing:.04em;margin-left:6px;font-weight:400}
+  .setup-divider{border:none;border-top:1px solid var(--card-border);margin:20px 0}
+  .setup-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}
+  .setup-save{font-family:var(--font-mono);font-size:.8rem;font-weight:600;padding:10px 28px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;transition:background .15s}
+  .setup-save:hover{background:var(--accent-hover)}
+  .setup-cancel{font-family:var(--font-mono);font-size:.8rem;font-weight:500;padding:10px 20px;background:none;color:var(--text-muted);border:1.5px solid var(--card-border);border-radius:var(--radius-sm);cursor:pointer}
+  .setup-cancel:hover{border-color:var(--text-muted)}
+  .key-status{font-family:var(--font-mono);font-size:.6rem;display:inline-block;padding:2px 6px;border-radius:3px;margin-left:8px}
+  .key-status.ok{background:#D1FAE5;color:#059669}
+  .key-status.missing{background:#FEE2E2;color:#DC2626}
+  .key-status.na{background:var(--tag-bg);color:var(--text-muted)}
+  .setup-note{font-family:var(--font-mono);font-size:.6rem;color:var(--text-muted);margin-top:20px;line-height:1.5;padding:10px 12px;background:#FAFAF8;border-radius:var(--radius-sm);border:1px solid var(--card-border)}
+
+  /* Main tabs */
+  .tabs{display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--card-border)}
+  .tab{font-family:var(--font-mono);font-size:.7rem;font-weight:600;padding:12px 18px;background:none;border:none;cursor:pointer;color:var(--tab-inactive);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;text-transform:uppercase;letter-spacing:.04em}
+  .tab:hover{color:var(--text)}
+  .tab.a-loc{color:var(--c-loc);border-bottom-color:var(--c-loc)}
+  .tab.a-aic{color:var(--c-aic);border-bottom-color:var(--c-aic)}
+  .tab.a-si{color:var(--c-si);border-bottom-color:var(--c-si)}
+  .tab.a-dpla{color:var(--c-dpla);border-bottom-color:var(--c-dpla)}
+  .tp{display:none}.tp.active{display:block}
+
+  .stabs{display:flex;gap:0;margin-bottom:20px;margin-top:4px;border-bottom:1px solid var(--card-border)}
+  .stab{font-family:var(--font-mono);font-size:.65rem;font-weight:500;padding:8px 16px;background:none;border:none;cursor:pointer;color:var(--tab-inactive);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;letter-spacing:.03em}
+  .stab:hover{color:var(--text)}.stab.active{color:var(--c-loc);border-bottom-color:var(--c-loc)}
+  .stp{display:none}.stp.active{display:block}
+
+  .sp{background:var(--card-bg);border:1.5px solid var(--card-border);border-radius:var(--radius);padding:18px 22px;box-shadow:var(--card-shadow);margin-bottom:20px}
+  .sr{display:flex;gap:10px;margin-bottom:10px}.sr:last-child{margin-bottom:0}
+  input[type="text"],input[type="number"],select{font-family:var(--font-mono);font-size:.78rem;padding:8px 11px;border:1.5px solid var(--input-border);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text);outline:none;transition:border-color .15s}
+  input:focus,select:focus{border-color:var(--accent)}
+  input[type="text"].si{flex:1}input[type="number"]{width:85px}
+  .dl{font-family:var(--font-mono);font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;align-self:center}
+  select{min-width:130px;cursor:pointer}
+  button.sb{font-family:var(--font-mono);font-size:.78rem;font-weight:600;padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;transition:background .15s;white-space:nowrap}
+  button.sb:hover{background:var(--accent-hover)}button.sb:disabled{opacity:.5;cursor:wait}
+  .presets{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+  .pb{font-family:var(--font-mono);font-size:.63rem;padding:4px 9px;background:var(--tag-bg);color:var(--tag-text);border:1.5px solid transparent;border-radius:20px;cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.04em}
+  .pb:hover{border-color:var(--accent);color:var(--accent-hover)}
+  .cr{display:flex;align-items:center;gap:8px}
+  .cr input[type="checkbox"]{accent-color:var(--accent);width:15px;height:15px}
+  .cr label{font-family:var(--font-mono);font-size:.7rem;color:var(--text-muted)}
+  .status{font-family:var(--font-mono);font-size:.71rem;color:var(--text-muted);margin-bottom:14px}.status strong{color:var(--text)}
+  .results{display:flex;flex-direction:column;gap:14px}
+  .rc{background:var(--card-bg);border:1.5px solid var(--card-border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--card-shadow);display:flex;transition:box-shadow .15s}
+  .rc:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
+  .rt{width:145px;min-height:120px;flex-shrink:0;background:#E5E7EB;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .rt img{width:100%;height:100%;object-fit:cover}
+  .rt .ni{font-family:var(--font-mono);font-size:.58rem;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;text-align:center;padding:8px}
+  .rb{padding:14px 18px;flex:1;min-width:0}
+  .rtt{font-family:var(--font-serif);font-size:.95rem;font-weight:600;line-height:1.3;margin-bottom:4px}
+  .rtt a{color:var(--text);text-decoration:none}.rtt a:hover{color:var(--link)}
+  .rm{font-family:var(--font-mono);font-size:.66rem;color:var(--text-muted);margin-bottom:6px;display:flex;gap:12px;flex-wrap:wrap}
+  .rd{font-size:.85rem;color:#4B5563;line-height:1.5;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .tags{display:flex;gap:4px;flex-wrap:wrap}
+  .tg{font-family:var(--font-mono);font-size:.58rem;padding:2px 6px;background:var(--tag-bg);color:var(--tag-text);border-radius:4px;text-transform:uppercase;letter-spacing:.04em}
+  .tg.ft{background:#DBEAFE;color:#1D4ED8}.tg.pd{background:#D1FAE5;color:#059669}.tg.st{background:#ECFDF5;color:#047857}.tg.dt{background:#EDE9FE;color:#7C3AED}
+  .ra{margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .al{font-family:var(--font-mono);font-size:.64rem;color:var(--link);text-decoration:none;text-transform:uppercase;letter-spacing:.04em}.al:hover{text-decoration:underline}
+  .me{margin-top:8px;padding:9px 11px;background:#FAFAF8;border:1px dashed var(--card-border);border-radius:var(--radius-sm);display:none}
+  .me.visible{display:block}
+  .me pre{font-family:var(--font-mono);font-size:.64rem;color:var(--text);white-space:pre-wrap;word-break:break-word;line-height:1.5}
+  .tm{font-family:var(--font-mono);font-size:.64rem;color:var(--accent-hover);background:none;border:none;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;padding:0}.tm:hover{text-decoration:underline}
+  .pg{display:flex;justify-content:center;gap:12px;margin-top:24px}
+  .pgb{font-family:var(--font-mono);font-size:.74rem;font-weight:500;padding:8px 16px;background:var(--card-bg);color:var(--text);border:1.5px solid var(--card-border);border-radius:var(--radius-sm);cursor:pointer;transition:all .15s}
+  .pgb:hover{border-color:var(--accent)}.pgb:disabled{opacity:.3;cursor:default}
+  .empty{text-align:center;padding:44px 20px;color:var(--text-muted)}
+  .empty h2{font-family:var(--font-serif);font-size:1.1rem;font-weight:600;margin-bottom:5px;color:var(--text)}
+  .empty p{font-size:.85rem;max-width:440px;margin:0 auto}
+  .loading{text-align:center;padding:32px;font-family:var(--font-mono);font-size:.76rem;color:var(--text-muted)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}.loading span{animation:pulse 1.2s infinite}
+  .disc{font-family:var(--font-mono);font-size:.56rem;color:#9CA3AF;text-align:center;margin-top:36px;padding-top:18px;border-top:1px solid var(--card-border);line-height:1.7}
+  .no-key-warning{font-family:var(--font-mono);font-size:.72rem;color:#DC2626;background:#FEE2E2;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;text-align:center}
+  .no-key-warning a{color:#DC2626;text-decoration:underline;cursor:pointer}
+  @media(max-width:640px){.sr{flex-direction:column}.rc{flex-direction:column}.rt{width:100%;min-height:160px}input[type="number"]{width:100%}select{width:100%}.tab{padding:10px 10px;font-size:.6rem}.stab{padding:6px 10px;font-size:.58rem}.setup-card{padding:24px 20px}}
+</style>
+</head>
+<body>
+
+<!-- SETUP OVERLAY -->
+<div class="setup-overlay" id="setup" style="display:none">
+<div class="setup-card">
+  <h2>Source <span>Finder</span> Setup</h2>
+  <p class="setup-sub">Enter your API keys below. They're stored in your browser only — never uploaded, never in the source code. You only need to do this once per device.</p>
+
+  <div class="setup-field">
+    <label>Smithsonian (data.gov) <span class="optional">Required for Smithsonian tab</span></label>
+    <div class="field-note">Free from <a href="https://api.data.gov/signup/" target="_blank">api.data.gov/signup</a></div>
+    <input type="text" id="k-si" placeholder="Your data.gov API key">
+  </div>
+
+  <div class="setup-field">
+    <label>DPLA <span class="optional">Required for DPLA tab</span></label>
+    <div class="field-note">Free — run: curl -X POST "https://api.dp.la/v2/api_key/you@email.com"</div>
+    <input type="text" id="k-dpla" placeholder="Your 32-character DPLA key">
+  </div>
+
+  <hr class="setup-divider">
+
+  <div class="setup-field">
+    <label>NARA <span class="optional">Optional — for future National Archives tab</span></label>
+    <div class="field-note">Free via email to Catalog_API@nara.gov</div>
+    <input type="text" id="k-nara" placeholder="Your NARA Catalog API key (optional)">
+  </div>
+
+  <div class="setup-note">
+    LOC and Art Institute of Chicago require no keys — they work immediately.<br>
+    Keys are saved in this browser's localStorage. Clear them anytime from the ⚙ menu.
+  </div>
+
+  <div class="setup-actions">
+    <button class="setup-cancel" id="setup-cancel" onclick="closeSetup()">Cancel</button>
+    <button class="setup-save" onclick="saveKeys()">Save Keys</button>
+  </div>
+</div>
+</div>
+
+<header><div class="hi"><div class="hl"><h1>Source <span>Finder</span></h1><span class="sub">Primary Source Discovery</span></div><div class="hdr-right"><span class="badge">v5</span><button class="gear-btn" onclick="openSetup()" title="API Key Settings">⚙</button></div></div></header>
+<main id="app">
+<div class="tabs">
+  <button class="tab a-loc" id="t-loc" onclick="mainTab('loc')">Library of Congress</button>
+  <button class="tab" id="t-aic" onclick="mainTab('aic')">Art Inst. Chicago</button>
+  <button class="tab" id="t-si" onclick="mainTab('si')">Smithsonian</button>
+  <button class="tab" id="t-dpla" onclick="mainTab('dpla')">DPLA</button>
+</div>
+
+<!-- LOC -->
+<div class="tp active" id="p-loc">
+<div class="stabs">
+  <button class="stab active" id="st-loc-col" onclick="locSub('col')">Collections</button>
+  <button class="stab" id="st-loc-ca" onclick="locSub('ca')">Chronicling America</button>
+</div>
+<div class="stp active" id="sp-loc-col">
+<div class="sp">
+  <div class="presets">
+    <button class="pb" onclick="locP('WWII propaganda poster',1939,1945)">WWII Posters</button>
+    <button class="pb" onclick="locP('Great Depression photograph',1929,1939)">Depression Photos</button>
+    <button class="pb" onclick="locP('1920s immigration',1920,1930)">1920s Immigration</button>
+    <button class="pb" onclick="locP('Cold War Soviet',1947,1991)">Cold War</button>
+    <button class="pb" onclick="locP('civil rights movement',1954,1968)">Civil Rights</button>
+    <button class="pb" onclick="locP('Dust Bowl farm',1930,1940)">Dust Bowl</button>
+    <button class="pb" onclick="locP('Japanese internment',1941,1946)">Japanese Internment</button>
+    <button class="pb" onclick="locP('Harlem Renaissance',1920,1935)">Harlem Renaissance</button>
+    <button class="pb" onclick="locP('Vietnam War',1955,1975)">Vietnam War</button>
+  </div>
+  <div class="sr"><input type="text" class="si" id="loc-q" placeholder="Search LOC collections…" onkeydown="if(event.key==='Enter')locS()"><button class="sb" id="loc-b" onclick="locS()">Search</button></div>
+  <div class="sr"><span class="dl">From</span><input type="number" id="loc-f" placeholder="Year"><span class="dl">To</span><input type="number" id="loc-t" placeholder="Year">
+  <select id="loc-fmt"><option value="">All Formats</option><option value="photo">Photographs</option><option value="map">Maps</option><option value="manuscript/mixed material">Manuscripts</option><option value="newspaper">Newspapers</option><option value="film, video">Film & Video</option><option value="book">Books</option></select></div>
+</div>
+<div id="loc-st" class="status"></div><div id="loc-r" class="results"><div class="empty"><h2>Search the Library of Congress</h2><p>Letters, photographs, newspapers, manuscripts, maps, and more.</p></div></div><div id="loc-pg" class="pg" style="display:none"></div>
+</div>
+<div class="stp" id="sp-loc-ca">
+<div class="sp">
+  <div class="presets">
+    <button class="pb" onclick="caP('Double V campaign',1942,1945)">Double V</button>
+    <button class="pb" onclick="caP('women factory war',1942,1945)">Women in Factories</button>
+    <button class="pb" onclick="caP('suffrage amendment women vote',1918,1920)">Suffrage</button>
+    <button class="pb" onclick="caP('influenza epidemic',1918,1919)">1918 Flu</button>
+    <button class="pb" onclick="caP('Pearl Harbor attack',1941,1942)">Pearl Harbor</button>
+    <button class="pb" onclick="caP('lynching anti-lynching',1900,1930)">Anti-Lynching</button>
+    <button class="pb" onclick="caP('prohibition alcohol bootleg',1920,1933)">Prohibition</button>
+    <button class="pb" onclick="caP('Executive Order 9066 Japanese',1942,1943)">EO 9066</button>
+    <button class="pb" onclick="caP('negro soldiers discrimination army',1941,1945)">Black Soldiers WWII</button>
+    <button class="pb" onclick="caP('stock market crash panic',1929,1930)">1929 Crash</button>
+  </div>
+  <div class="sr"><input type="text" class="si" id="ca-q" placeholder="Full-text search of 12M+ newspaper pages…" onkeydown="if(event.key==='Enter')caS()"><button class="sb" id="ca-b" onclick="caS()">Search</button></div>
+  <div class="sr"><span class="dl">From</span><input type="number" id="ca-f" placeholder="Year"><span class="dl">To</span><input type="number" id="ca-t" placeholder="Year">
+  <select id="ca-state"><option value="">All States</option><option>Alabama</option><option>Arizona</option><option>Arkansas</option><option>California</option><option>Colorado</option><option>Connecticut</option><option>Delaware</option><option>District of Columbia</option><option>Florida</option><option>Georgia</option><option>Hawaii</option><option>Idaho</option><option>Illinois</option><option>Indiana</option><option>Iowa</option><option>Kansas</option><option>Kentucky</option><option>Louisiana</option><option>Maine</option><option>Maryland</option><option>Massachusetts</option><option>Michigan</option><option>Minnesota</option><option>Mississippi</option><option>Missouri</option><option>Montana</option><option>Nebraska</option><option>Nevada</option><option>New Hampshire</option><option>New Jersey</option><option>New Mexico</option><option>New York</option><option>North Carolina</option><option>North Dakota</option><option>Ohio</option><option>Oklahoma</option><option>Oregon</option><option>Pennsylvania</option><option>Rhode Island</option><option>South Carolina</option><option>South Dakota</option><option>Tennessee</option><option>Texas</option><option>Utah</option><option>Vermont</option><option>Virginia</option><option>Washington</option><option>West Virginia</option><option>Wisconsin</option><option>Wyoming</option></select></div>
+</div>
+<div id="ca-st" class="status"></div><div id="ca-r" class="results"><div class="empty"><h2>Search Chronicling America</h2><p>Full-text search across 12 million+ historic American newspaper pages, 1756–1963.</p></div></div><div id="ca-pg" class="pg" style="display:none"></div>
+</div>
+</div>
+
+<!-- AIC -->
+<div class="tp" id="p-aic">
+<div class="sp">
+  <div class="presets">
+    <button class="pb" onclick="aicP('ancient egypt')">Ancient Egypt</button>
+    <button class="pb" onclick="aicP('Japanese woodblock')">Japanese Woodblock</button>
+    <button class="pb" onclick="aicP('medieval manuscript')">Medieval</button>
+    <button class="pb" onclick="aicP('African mask sculpture')">African Art</button>
+    <button class="pb" onclick="aicP('greek pottery vase')">Greek Pottery</button>
+    <button class="pb" onclick="aicP('Chinese landscape painting')">Chinese Painting</button>
+    <button class="pb" onclick="aicP('Islamic calligraphy tile')">Islamic Art</button>
+    <button class="pb" onclick="aicP('impressionism Paris')">Impressionism</button>
+    <button class="pb" onclick="aicP('Mesoamerican Aztec Maya')">Mesoamerican</button>
+    <button class="pb" onclick="aicP('Indian Mughal')">Mughal India</button>
+    <button class="pb" onclick="aicP('Renaissance Italy')">Renaissance</button>
+    <button class="pb" onclick="aicP('American civil war')">Civil War Era</button>
+  </div>
+  <div class="sr"><input type="text" class="si" id="aic-q" placeholder="Search artworks…" onkeydown="if(event.key==='Enter')aicS()"><button class="sb" id="aic-b" onclick="aicS()">Search</button></div>
+  <div class="sr"><div class="cr"><input type="checkbox" id="aic-pd" checked><label for="aic-pd">Public domain only</label></div></div>
+</div>
+<div id="aic-st" class="status"></div><div id="aic-r" class="results"><div class="empty"><h2>Search the Art Institute of Chicago</h2><p>100,000+ artworks spanning world cultures.</p></div></div><div id="aic-pg" class="pg" style="display:none"></div>
+</div>
+
+<!-- SI -->
+<div class="tp" id="p-si">
+<div id="si-warn"></div>
+<div class="sp">
+  <div class="presets">
+    <button class="pb" onclick="siP('Star Spangled Banner','history_culture')">Star-Spangled Banner</button>
+    <button class="pb" onclick="siP('civil rights sit-in','history_culture')">Civil Rights</button>
+    <button class="pb" onclick="siP('African American history slavery','history_culture')">African American</button>
+    <button class="pb" onclick="siP('World War II uniform','history_culture')">WWII Artifacts</button>
+    <button class="pb" onclick="siP('immigration Ellis Island','history_culture')">Immigration</button>
+    <button class="pb" onclick="siP('Native American','history_culture')">Native American</button>
+    <button class="pb" onclick="siP('space Apollo moon','science_technology')">Space Race</button>
+    <button class="pb" onclick="siP('portrait president','art_design')">Presidential Portraits</button>
+    <button class="pb" onclick="siP('African mask textile','art_design')">African Art</button>
+    <button class="pb" onclick="siP('Chinese jade bronze','art_design')">Chinese Art</button>
+    <button class="pb" onclick="siP('Freer Japanese','art_design')">Japanese Art</button>
+  </div>
+  <div class="sr"><input type="text" class="si" id="si-q" placeholder="Search Smithsonian…" onkeydown="if(event.key==='Enter')siS()"><button class="sb" id="si-b" onclick="siS()">Search</button></div>
+  <div class="sr"><select id="si-cat"><option value="">All Categories</option><option value="art_design">Art & Design</option><option value="history_culture">History & Culture</option><option value="science_technology">Science & Technology</option></select>
+  <div class="cr"><input type="checkbox" id="si-img" checked><label for="si-img">With images only</label></div></div>
+</div>
+<div id="si-st" class="status"></div><div id="si-r" class="results"><div class="empty"><h2>Search the Smithsonian</h2><p>5+ million items across 21 museums.</p></div></div><div id="si-pg" class="pg" style="display:none"></div>
+</div>
+
+<!-- DPLA -->
+<div class="tp" id="p-dpla">
+<div id="dpla-warn"></div>
+<div class="sp">
+  <div class="presets">
+    <button class="pb" onclick="dplaP('slavery abolition')">Slavery & Abolition</button>
+    <button class="pb" onclick="dplaP('civil war photographs')">Civil War Photos</button>
+    <button class="pb" onclick="dplaP('Great Migration African American')">Great Migration</button>
+    <button class="pb" onclick="dplaP('New Deal WPA')">New Deal / WPA</button>
+    <button class="pb" onclick="dplaP('women suffrage movement')">Women's Suffrage</button>
+    <button class="pb" onclick="dplaP('Native American boarding school')">Boarding Schools</button>
+    <button class="pb" onclick="dplaP('Mexican American bracero')">Mexican American</button>
+    <button class="pb" onclick="dplaP('labor union strike')">Labor Movement</button>
+    <button class="pb" onclick="dplaP('Reconstruction freedmen')">Reconstruction</button>
+    <button class="pb" onclick="dplaP('internment Japanese American')">Japanese Internment</button>
+    <button class="pb" onclick="dplaP('manifest destiny westward')">Manifest Destiny</button>
+    <button class="pb" onclick="dplaP('Vietnam protest antiwar')">Vietnam Protest</button>
+  </div>
+  <div class="sr"><input type="text" class="si" id="dpla-q" placeholder="Search 30M+ items from U.S. libraries, archives, museums…" onkeydown="if(event.key==='Enter')dplaS()"><button class="sb" id="dpla-b" onclick="dplaS()">Search</button></div>
+  <div class="sr"><select id="dpla-type"><option value="">All Types</option><option value="image">Images</option><option value="text">Text</option><option value="sound">Sound</option><option value="moving image">Moving Image</option><option value="physical object">Physical Objects</option></select></div>
+</div>
+<div id="dpla-st" class="status"></div><div id="dpla-r" class="results"><div class="empty"><h2>Search the Digital Public Library of America</h2><p>30+ million items from thousands of U.S. libraries, archives, and museums.</p></div></div><div id="dpla-pg" class="pg" style="display:none"></div>
+</div>
+
+<div class="disc">
+  Library of Congress data via the loc.gov JSON API. Art Institute of Chicago via the AIC Public API.<br>
+  Smithsonian data via the Smithsonian Open Access API (no endorsement implied by the Smithsonian Institution).<br>
+  DPLA data via the Digital Public Library of America API. Built for educational source curation.
+</div>
+</main>
+
+<script>
+// ══════════ KEY MANAGEMENT ══════════
+const KEYS={si:null,dpla:null,nara:null};
+
+function loadKeys(){
+  KEYS.si=localStorage.getItem('sf_key_si')||null;
+  KEYS.dpla=localStorage.getItem('sf_key_dpla')||null;
+  KEYS.nara=localStorage.getItem('sf_key_nara')||null;
+}
+
+function hasRequiredKeys(){return KEYS.si&&KEYS.dpla}
+
+function openSetup(){
+  const s=$('setup');s.style.display='flex';
+  $('k-si').value=KEYS.si||'';
+  $('k-dpla').value=KEYS.dpla||'';
+  $('k-nara').value=KEYS.nara||'';
+  $('setup-cancel').style.display=hasRequiredKeys()?'inline-block':'none';
+}
+
+function closeSetup(){$('setup').style.display='none'}
+
+function saveKeys(){
+  const si=$('k-si').value.trim(),dpla=$('k-dpla').value.trim(),nara=$('k-nara').value.trim();
+  if(si){localStorage.setItem('sf_key_si',si);KEYS.si=si}else{localStorage.removeItem('sf_key_si');KEYS.si=null}
+  if(dpla){localStorage.setItem('sf_key_dpla',dpla);KEYS.dpla=dpla}else{localStorage.removeItem('sf_key_dpla');KEYS.dpla=null}
+  if(nara){localStorage.setItem('sf_key_nara',nara);KEYS.nara=nara}else{localStorage.removeItem('sf_key_nara');KEYS.nara=null}
+  closeSetup();
+  checkKeyWarnings();
+}
+
+function checkKeyWarnings(){
+  $('si-warn').innerHTML=KEYS.si?'':'<div class="no-key-warning">Smithsonian requires an API key. <a onclick="openSetup()">Add it in settings ⚙</a></div>';
+  $('dpla-warn').innerHTML=KEYS.dpla?'':'<div class="no-key-warning">DPLA requires an API key. <a onclick="openSetup()">Add it in settings ⚙</a></div>';
+}
+
+// ══════════ INIT ══════════
+loadKeys();
+if(!hasRequiredKeys())openSetup();
+checkKeyWarnings();
+
+// ══════════ SHARED ══════════
+function mainTab(t){document.querySelectorAll('.tab').forEach(e=>e.className='tab');document.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));$('t-'+t).classList.add('a-'+t);$('p-'+t).classList.add('active')}
+function locSub(s){document.querySelectorAll('.stab').forEach(e=>e.classList.remove('active'));document.querySelectorAll('.stp').forEach(p=>p.classList.remove('active'));$('st-loc-'+s).classList.add('active');$('sp-loc-'+s).classList.add('active')}
+function $(id){return document.getElementById(id)}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function tog(id){$(id).classList.toggle('visible')}
+function cpy(id){const el=$(id);const t=el.querySelector('pre').textContent;navigator.clipboard.writeText(t).then(()=>{const b=el.querySelector('.tm');const o=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=o,1500)})}
+function enc(s){return encodeURIComponent(s)}
+function btnD(el,dis){el.disabled=dis;el.textContent=dis?'Searching…':'Search'}
+function ld(n){return`<div class="loading"><span>Searching ${n}…</span></div>`}
+function ne(m){return`<div class="empty"><h2>${m||'No results'}</h2><p>Try broader keywords or adjust filters.</p></div>`}
+function errH(id,e){$(id).innerHTML=`<div class="empty"><h2>Error</h2><p>${e.message}. Wait a moment and try again.</p></div>`}
+function card(thumb,body){return`<div class="rc"><div class="rt">${thumb||'<span class="ni">No image</span>'}</div><div class="rb">${body}</div></div>`}
+function imgT(url){return url?`<img src="${url}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='<span class=ni>No image</span>'">`:''}
+function pag(id,show,prev,next,fn,cur){if(!show){$(id).style.display='none';return}$(id).style.display='flex';$(id).innerHTML=`<button class="pgb" ${prev?'':'disabled'} onclick="${fn(cur-1)}">← Prev</button><button class="pgb" ${next?'':'disabled'} onclick="${fn(cur+1)}">Next →</button>`}
+
+// ══════════ LOC ══════════
+let lp=1;
+function locP(q,f,t){$('loc-q').value=q;$('loc-f').value=f;$('loc-t').value=t;$('loc-fmt').value='';locS()}
+async function locS(pg){
+  const q=$('loc-q').value.trim();if(!q)return;lp=pg||1;
+  const f=$('loc-f').value,t=$('loc-t').value,fmt=$('loc-fmt').value;
+  btnD($('loc-b'),true);$('loc-r').innerHTML=ld('Library of Congress');$('loc-pg').style.display='none';$('loc-st').textContent='';
+  let u=`https://www.loc.gov/search/?q=${enc(q)}&fo=json&c=20&sp=${lp}`;
+  if(f&&t)u+=`&dates=${f}/${t}`;else if(f)u+=`&dates=${f}/9999`;else if(t)u+=`&dates=0/${t}`;
+  if(fmt)u+=`&fa=original-format:${enc(fmt)}`;
+  try{rLoc(await(await fetch(u)).json())}catch(e){errH('loc-r',e)}
+  btnD($('loc-b'),false)
+}
+function rLoc(d){
+  const res=d.results||[],pg=d.pagination||{},tot=pg.of||0;
+  if(!res.length){$('loc-r').innerHTML=ne();$('loc-st').textContent='';$('loc-pg').style.display='none';return}
+  $('loc-st').innerHTML=`<strong>${tot.toLocaleString()}</strong> results — page <strong>${lp}</strong>`;
+  $('loc-r').innerHTML=res.map((i,x)=>{
+    const tit=i.title||'Untitled',dt=i.date||'',desc=(i.description||[]).join(' ').substring(0,260),
+      subj=(i.subject||[]).slice(0,3),fmts=i.original_format||[],cr=(i.contributor||[]).slice(0,2),
+      url=i.url||i.id||'#',lu=url.startsWith('http')?url:'https://www.loc.gov'+url,
+      th=i.image_url?i.image_url[0]:null,tu=th?(th.startsWith('//')?'https:'+th:th):null,
+      m=[`Title: ${tit}`,cr.length?`Creator: ${cr.join('; ')}`:0,dt?`Date: ${dt}`:0,fmts.length?`Format: ${fmts.join(', ')}`:0,subj.length?`Subjects: ${subj.join('; ')}`:0,`URL: ${lu}`].filter(Boolean).join('\n');
+    return card(imgT(tu),`<div class="rtt"><a href="${lu}" target="_blank">${esc(tit)}</a></div><div class="rm">${dt?`<span>📅 ${esc(dt)}</span>`:''}${cr.length?`<span>✍️ ${esc(cr.join('; '))}</span>`:''}</div>${desc?`<div class="rd">${esc(desc)}</div>`:''}<div class="tags">${fmts.map(f=>`<span class="tg ft">${esc(f)}</span>`).join('')}${subj.map(s=>`<span class="tg">${esc(s)}</span>`).join('')}</div><div class="ra"><a href="${lu}" target="_blank" class="al">View →</a><button class="tm" onclick="tog('lm${x}')">Metadata ↓</button></div><div class="me" id="lm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('lm${x}')">Copy</button></div>`)
+  }).join('');
+  pag('loc-pg',tot>20,lp>1,pg.next,x=>`locS(${x})`,lp)
+}
+
+// ══════════ CHRONICLING AMERICA ══════════
+let cap=1;
+function caP(q,f,t){$('ca-q').value=q;$('ca-f').value=f;$('ca-t').value=t;$('ca-state').value='';caS()}
+async function caS(pg){
+  const q=$('ca-q').value.trim();if(!q)return;cap=pg||1;
+  const f=$('ca-f').value,t=$('ca-t').value,st=$('ca-state').value;
+  btnD($('ca-b'),true);$('ca-r').innerHTML=ld('Chronicling America');$('ca-pg').style.display='none';$('ca-st').textContent='';
+  let u=`https://www.loc.gov/collections/chronicling-america/?dl=page&q=${enc(q)}&fo=json&c=20&sp=${cap}`;
+  if(f)u+=`&start_date=${f}-01-01`;if(t)u+=`&end_date=${t}-12-31`;
+  if(st)u+=`&fa=location_state:${enc(st)}`;
+  try{rCa(await(await fetch(u)).json())}catch(e){errH('ca-r',e)}
+  btnD($('ca-b'),false)
+}
+function rCa(d){
+  const res=d.results||[],pg=d.pagination||{},tot=pg.of||0;
+  if(!res.length){$('ca-r').innerHTML=ne('No newspaper pages found');$('ca-st').textContent='';$('ca-pg').style.display='none';return}
+  $('ca-st').innerHTML=`<strong>${tot.toLocaleString()}</strong> pages — page <strong>${cap}</strong>`;
+  $('ca-r').innerHTML=res.map((i,x)=>{
+    const tit=i.title||'Untitled',dt=i.date||'',
+      url=i.url||i.id||'#',lu=url.startsWith('http')?url:'https://www.loc.gov'+url,
+      th=i.image_url?i.image_url[0]:null,tu=th?(th.startsWith('//')?'https:'+th:th):null,
+      loc=(i.location||[]).slice(0,2),
+      desc=i.description?(Array.isArray(i.description)?i.description.join(' '):i.description).substring(0,300):'',
+      m=[`Title: ${tit}`,dt?`Date: ${dt}`:0,loc.length?`Location: ${loc.join('; ')}`:0,`URL: ${lu}`].filter(Boolean).join('\n');
+    return card(imgT(tu),`<div class="rtt"><a href="${lu}" target="_blank">${esc(tit)}</a></div><div class="rm">${dt?`<span>📅 ${esc(dt)}</span>`:''}${loc.length?`<span>📍 ${esc(loc.join(', '))}</span>`:''}</div>${desc?`<div class="rd">${esc(desc)}</div>`:''}<div class="tags"><span class="tg ft">Newspaper</span></div><div class="ra"><a href="${lu}" target="_blank" class="al">View Page →</a><button class="tm" onclick="tog('cm${x}')">Metadata ↓</button></div><div class="me" id="cm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('cm${x}')">Copy</button></div>`)
+  }).join('');
+  pag('ca-pg',tot>20,cap>1,pg.next,x=>`caS(${x})`,cap)
+}
+
+// ══════════ AIC ══════════
+let ap=1;const AF='id,title,artist_title,date_display,place_of_origin,medium_display,image_id,department_title,artwork_type_title,classification_title,is_public_domain,style_title',AI='https://www.artic.edu/iiif/2';
+function aicP(q){$('aic-q').value=q;aicS()}
+async function aicS(pg){
+  const q=$('aic-q').value.trim();if(!q)return;ap=pg||1;
+  btnD($('aic-b'),true);$('aic-r').innerHTML=ld('Art Institute');$('aic-pg').style.display='none';$('aic-st').textContent='';
+  let u=`https://api.artic.edu/api/v1/artworks/search?q=${enc(q)}&fields=${AF}&limit=20&page=${ap}`;
+  if($('aic-pd').checked)u+='&query[term][is_public_domain]=true';
+  try{rAic(await(await fetch(u)).json())}catch(e){errH('aic-r',e)}
+  btnD($('aic-b'),false)
+}
+function rAic(d){
+  const res=d.data||[],pg=d.pagination||{},tot=pg.total||0,tp=pg.total_pages||1;
+  if(!res.length){$('aic-r').innerHTML=ne('No artworks found');$('aic-st').textContent='';$('aic-pg').style.display='none';return}
+  $('aic-st').innerHTML=`<strong>${tot.toLocaleString()}</strong> artworks — page <strong>${ap}</strong> of ${tp.toLocaleString()}`;
+  $('aic-r').innerHTML=res.map((i,x)=>{
+    const t=i.title||'Untitled',a=i.artist_title||'Unknown',dt=i.date_display||'',o=i.place_of_origin||'',
+      med=i.medium_display||'',at=i.artwork_type_title||'',cl=i.classification_title||'',st=i.style_title||'',
+      pd=i.is_public_domain,au=`https://www.artic.edu/artworks/${i.id}`,
+      tu=i.image_id?`${AI}/${i.image_id}/full/300,/0/default.jpg`:null,
+      m=[`Title: ${t}`,`Artist: ${a}`,dt?`Date: ${dt}`:0,o?`Origin: ${o}`:0,med?`Medium: ${med}`:0,pd?'Rights: Public Domain':'Rights: Restricted',`URL: ${au}`,i.image_id?`Image: ${AI}/${i.image_id}/full/843,/0/default.jpg`:0].filter(Boolean).join('\n');
+    return card(imgT(tu),`<div class="rtt"><a href="${au}" target="_blank">${esc(t)}</a></div><div class="rm"><span>🎨 ${esc(a)}</span>${dt?`<span>📅 ${esc(dt)}</span>`:''}${o?`<span>📍 ${esc(o)}</span>`:''}</div>${med?`<div class="rd">${esc(med)}</div>`:''}<div class="tags">${pd?'<span class="tg pd">Public Domain</span>':''}${at?`<span class="tg ft">${esc(at)}</span>`:''}${cl?`<span class="tg">${esc(cl)}</span>`:''}${st?`<span class="tg">${esc(st)}</span>`:''}</div><div class="ra"><a href="${au}" target="_blank" class="al">View →</a>${i.image_id?`<a href="${AI}/${i.image_id}/full/843,/0/default.jpg" target="_blank" class="al">Full Image →</a>`:''}<button class="tm" onclick="tog('am${x}')">Metadata ↓</button></div><div class="me" id="am${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('am${x}')">Copy</button></div>`)
+  }).join('');
+  pag('aic-pg',tp>1,ap>1,ap<tp,x=>`aicS(${x})`,ap)
+}
+
+// ══════════ SMITHSONIAN ══════════
+let ss=0;const SR=20;
+const SU={'NMAAHC':'African American History','NMAH':'American History','NASM':'Air & Space','SAAM':'American Art','NPG':'Portrait Gallery','FSG':'Freer|Sackler','CHNDM':'Cooper Hewitt','NMAFA':'African Art','NMAI':'American Indian','SIA':'SI Archives','SIL':'SI Libraries','HAC':'History & Art','CFCH':'Folklife'};
+function siP(q,c){$('si-q').value=q;$('si-cat').value=c||'';siS()}
+async function siS(start){
+  if(!KEYS.si){openSetup();return}
+  const q=$('si-q').value.trim();if(!q)return;ss=start||0;if(ss<0)ss=0;
+  const c=$('si-cat').value,im=$('si-img').checked;
+  btnD($('si-b'),true);$('si-r').innerHTML=ld('Smithsonian');$('si-pg').style.display='none';$('si-st').textContent='';
+  let base=c?`https://api.si.edu/openaccess/api/v1.0/category/${c}/search`:'https://api.si.edu/openaccess/api/v1.0/search';
+  let u=`${base}?q=${enc(q)}&api_key=${KEYS.si}&rows=${SR}&start=${ss}`;
+  if(im)u+='&online_media_type=Images';
+  try{rSi(await(await fetch(u)).json())}catch(e){errH('si-r',e)}
+  btnD($('si-b'),false)
+}
+function sX(r){
+  const c=r.content||{},dn=c.descriptiveNonRepeating||{},ft=c.freetext||{},ix=c.indexedStructured||{};
+  const title=(dn.title&&dn.title.content)||r.title||'Untitled',uc=dn.unit_code||'',un=SU[uc]||uc;
+  const gf=k=>(ft[k]||[]).map(x=>x.content).filter(Boolean),g1=k=>{const a=ft[k];return a&&a.length?a[0].content:''};
+  const dt=g1('date'),nm=gf('name'),pl=gf('place'),tp=(ix.topic||[]).slice(0,4),ph=g1('physicalDescription'),nt=g1('notes'),ot=(ix.object_type||[]).slice(0,2);
+  let tu=null,fi=null;const om=dn.online_media;
+  if(om&&om.media&&om.media.length){const m=om.media[0];tu=m.thumbnail||null;fi=m.content||null;if(!tu&&fi)tu=fi}
+  const gu=dn.guid||'',su=gu.startsWith('http')?gu:'#';
+  return{title,un,dt,nm,pl,tp,ph,nt,ot,tu,fi,su}
+}
+function rSi(d){
+  const rsp=d.response||{},rows=rsp.rows||[],tot=rsp.rowCount||0,cp=Math.floor(ss/SR)+1,tp=Math.ceil(tot/SR);
+  if(!rows.length){$('si-r').innerHTML=ne();$('si-st').textContent='';$('si-pg').style.display='none';return}
+  $('si-st').innerHTML=`<strong>${tot.toLocaleString()}</strong> items — page <strong>${cp}</strong> of ${tp.toLocaleString()}`;
+  $('si-r').innerHTML=rows.map((r,x)=>{
+    const d=sX(r),
+      m=[`Title: ${d.title}`,d.nm.length?`Creator: ${d.nm.join('; ')}`:0,d.dt?`Date: ${d.dt}`:0,d.pl.length?`Place: ${d.pl.join('; ')}`:0,d.ph?`Description: ${d.ph}`:0,`Museum: ${d.un}`,d.tp.length?`Topics: ${d.tp.join('; ')}`:0,`URL: ${d.su}`,d.fi?`Image: ${d.fi}`:0].filter(Boolean).join('\n');
+    return card(imgT(d.tu),`<div class="rtt"><a href="${d.su}" target="_blank">${esc(d.title)}</a></div><div class="rm">${d.nm.length?`<span>✍️ ${esc(d.nm.slice(0,2).join('; '))}</span>`:''}${d.dt?`<span>📅 ${esc(d.dt)}</span>`:''}${d.pl.length?`<span>📍 ${esc(d.pl[0])}</span>`:''}</div>${d.ph||d.nt?`<div class="rd">${esc(d.ph||d.nt)}</div>`:''}<div class="tags"><span class="tg st">${esc(d.un)}</span>${d.ot.map(t=>`<span class="tg ft">${esc(t)}</span>`).join('')}${d.tp.slice(0,2).map(t=>`<span class="tg">${esc(t)}</span>`).join('')}</div><div class="ra"><a href="${d.su}" target="_blank" class="al">View →</a>${d.fi?`<a href="${d.fi}" target="_blank" class="al">Full Image →</a>`:''}<button class="tm" onclick="tog('sm${x}')">Metadata ↓</button></div><div class="me" id="sm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('sm${x}')">Copy</button></div>`)
+  }).join('');
+  if(tp>1){$('si-pg').style.display='flex';$('si-pg').innerHTML=`<button class="pgb" ${ss>0?'':'disabled'} onclick="siS(${ss-SR})">← Prev</button><button class="pgb" ${cp<tp?'':'disabled'} onclick="siS(${ss+SR})">Next →</button>`}else $('si-pg').style.display='none'
+}
+
+// ══════════ DPLA ══════════
+let dp=1;
+function dplaP(q){$('dpla-q').value=q;dplaS()}
+async function dplaS(pg){
+  if(!KEYS.dpla){openSetup();return}
+  const q=$('dpla-q').value.trim();if(!q)return;dp=pg||1;
+  const tp=$('dpla-type').value;
+  btnD($('dpla-b'),true);$('dpla-r').innerHTML=ld('DPLA');$('dpla-pg').style.display='none';$('dpla-st').textContent='';
+  let u=`https://api.dp.la/v2/items?q=${enc(q)}&api_key=${KEYS.dpla}&page_size=20&page=${dp}`;
+  if(tp)u+=`&sourceResource.type=${enc(tp)}`;
+  try{rDpla(await(await fetch(u)).json())}catch(e){errH('dpla-r',e)}
+  btnD($('dpla-b'),false)
+}
+function rDpla(d){
+  const tot=d.count||0,res=d.docs||[],tp=Math.ceil(tot/20);
+  if(!res.length){$('dpla-r').innerHTML=ne();$('dpla-st').textContent='';$('dpla-pg').style.display='none';return}
+  $('dpla-st').innerHTML=`<strong>${tot.toLocaleString()}</strong> items — page <strong>${dp}</strong> of ${tp.toLocaleString()}`;
+  $('dpla-r').innerHTML=res.map((i,x)=>{
+    const sr=i.sourceResource||{},
+      tit=sr.title?(Array.isArray(sr.title)?sr.title[0]:sr.title):'Untitled',
+      dt=sr.date?((Array.isArray(sr.date)?sr.date[0]?.displayDate:sr.date.displayDate)||''):'',
+      desc=sr.description?(Array.isArray(sr.description)?sr.description[0]:sr.description):'',
+      types=sr.type?(Array.isArray(sr.type)?sr.type:[sr.type]):[],
+      subj=sr.subject?(Array.isArray(sr.subject)?sr.subject.slice(0,3).map(s=>s.name||s):[]):[],
+      creator=sr.creator?(Array.isArray(sr.creator)?sr.creator.slice(0,2).join('; '):sr.creator):'',
+      dataProvider=i.dataProvider?(Array.isArray(i.dataProvider)?i.dataProvider[0]:i.dataProvider):'',
+      viewUrl=i.isShownAt||'#',tu=i.object||null,
+      spatial=sr.spatial?(Array.isArray(sr.spatial)?sr.spatial[0]?.name||'':''):'',
+      m=[`Title: ${tit}`,creator?`Creator: ${creator}`:0,dt?`Date: ${dt}`:0,spatial?`Place: ${spatial}`:0,desc?`Description: ${(desc+'').substring(0,300)}`:0,dataProvider?`Source: ${dataProvider}`:0,`URL: ${viewUrl}`].filter(Boolean).join('\n');
+    return card(imgT(tu),`<div class="rtt"><a href="${viewUrl}" target="_blank">${esc(tit)}</a></div><div class="rm">${creator?`<span>✍️ ${esc(creator)}</span>`:''}${dt?`<span>📅 ${esc(dt)}</span>`:''}${spatial?`<span>📍 ${esc(spatial)}</span>`:''}</div>${desc?`<div class="rd">${esc((desc+'').substring(0,260))}</div>`:''}<div class="tags">${dataProvider?`<span class="tg dt">${esc(dataProvider.length>35?dataProvider.substring(0,35)+'…':dataProvider)}</span>`:''}${types.map(t=>`<span class="tg ft">${esc(t)}</span>`).join('')}${subj.map(s=>`<span class="tg">${esc(typeof s==='string'?s:s.name||'')}</span>`).join('')}</div><div class="ra"><a href="${viewUrl}" target="_blank" class="al">View Original →</a><button class="tm" onclick="tog('dm${x}')">Metadata ↓</button></div><div class="me" id="dm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('dm${x}')">Copy</button></div>`)
+  }).join('');
+  pag('dpla-pg',tp>1,dp>1,dp<tp,x=>`dplaS(${x})`,dp)
+}
+</script>
+</body>
+</html>
