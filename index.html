@@ -345,6 +345,7 @@ function esc(s){if(!s)return'';const d=document.createElement('div');d.textConte
 function tog(id){$(id).classList.toggle('visible')}
 function cpy(id){const el=$(id);const t=el.querySelector('pre').textContent;navigator.clipboard.writeText(t).then(()=>{const b=el.querySelector('.tm');const o=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=o,1500)})}
 function enc(s){return encodeURIComponent(s)}
+function jsonp(url){return new Promise((resolve,reject)=>{const cb='_jp'+Math.random().toString(36).slice(2);const s=document.createElement('script');s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;s.onerror=()=>{delete window[cb];s.remove();reject(new Error('Network request failed'))};window[cb]=d=>{delete window[cb];s.remove();resolve(d)};document.head.appendChild(s)})}
 function btnD(el,dis){el.disabled=dis;el.textContent=dis?'Searching…':'Search'}
 function ld(n){return`<div class="loading"><span>Searching ${n}…</span></div>`}
 function ne(m){return`<div class="empty"><h2>${m||'No results'}</h2><p>Try broader keywords or adjust filters.</p></div>`}
@@ -363,7 +364,7 @@ async function locS(pg){
   let u=`https://www.loc.gov/search/?q=${enc(q)}&fo=json&c=20&sp=${lp}`;
   if(f&&t)u+=`&dates=${f}/${t}`;else if(f)u+=`&dates=${f}/9999`;else if(t)u+=`&dates=0/${t}`;
   if(fmt)u+=`&fa=original-format:${enc(fmt)}`;
-  try{rLoc(await(await fetch(u)).json())}catch(e){errH('loc-r',e)}
+  try{rLoc(await jsonp(u))}catch(e){errH('loc-r',e)}
   btnD($('loc-b'),false)
 }
 function rLoc(d){
@@ -391,7 +392,7 @@ async function caS(pg){
   let u=`https://www.loc.gov/collections/chronicling-america/?dl=page&q=${enc(q)}&fo=json&c=20&sp=${cap}`;
   if(f)u+=`&start_date=${f}-01-01`;if(t)u+=`&end_date=${t}-12-31`;
   if(st)u+=`&fa=location_state:${enc(st)}`;
-  try{rCa(await(await fetch(u)).json())}catch(e){errH('ca-r',e)}
+  try{rCa(await jsonp(u))}catch(e){errH('ca-r',e)}
   btnD($('ca-b'),false)
 }
 function rCa(d){
