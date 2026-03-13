@@ -347,6 +347,7 @@ function cpy(id){const el=$(id);const t=el.querySelector('pre').textContent;navi
 function enc(s){return encodeURIComponent(s)}
 async function corsFetch(url){
   const proxies=[
+    u=>'https://loc-proxy.throbbing-waterfall-52d5.workers.dev/?url='+enc(u),
     u=>'https://corsproxy.io/?url='+enc(u),
     u=>'https://api.allorigins.win/raw?url='+enc(u)
   ];
