@@ -345,21 +345,12 @@ function esc(s){if(!s)return'';const d=document.createElement('div');d.textConte
 function tog(id){$(id).classList.toggle('visible')}
 function cpy(id){const el=$(id);const t=el.querySelector('pre').textContent;navigator.clipboard.writeText(t).then(()=>{const b=el.querySelector('.tm');const o=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=o,1500)})}
 function enc(s){return encodeURIComponent(s)}
-async function corsFetch(url){
-  const proxies=[
-    u=>'https://loc-proxy.throbbing-waterfall-52d5.workers.dev/?url='+enc(u),
-    u=>'https://corsproxy.io/?url='+enc(u),
-    u=>'https://api.allorigins.win/raw?url='+enc(u)
-  ];
-  for(const px of proxies){
-    try{const r=await fetch(px(url));if(r.ok)return r.json()}catch(e){}
-  }
-  throw new Error('All CORS proxies failed')
-}
+async function corsFetch(url){const r=await fetch(url);if(!r.ok)throw new Error('Request failed ('+r.status+')');return r.json()}
 function btnD(el,dis){el.disabled=dis;el.textContent=dis?'Searching…':'Search'}
 function ld(n){return`<div class="loading"><span>Searching ${n}…</span></div>`}
 function ne(m){return`<div class="empty"><h2>${m||'No results'}</h2><p>Try broader keywords or adjust filters.</p></div>`}
 function errH(id,e){$(id).innerHTML=`<div class="empty"><h2>Error</h2><p>${e.message}. Wait a moment and try again.</p></div>`}
+function locErr(id,q,u){const hu=u.replace('&fo=json','');$(id).innerHTML=`<div class="empty"><h2>LOC is temporarily blocking API requests</h2><p>The Library of Congress has extra security enabled right now. You can <a href="${hu}" target="_blank" rel="noopener" style="color:var(--link)">search LOC directly for "${esc(q)}"</a> in a new tab.</p></div>`}
 function card(thumb,body){return`<div class="rc"><div class="rt">${thumb||'<span class="ni">No image</span>'}</div><div class="rb">${body}</div></div>`}
 function imgT(url){return url?`<img src="${url}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='<span class=ni>No image</span>'">`:''}
 function pag(id,show,prev,next,fn,cur){if(!show){$(id).style.display='none';return}$(id).style.display='flex';$(id).innerHTML=`<button class="pgb" ${prev?'':'disabled'} onclick="${fn(cur-1)}">← Prev</button><button class="pgb" ${next?'':'disabled'} onclick="${fn(cur+1)}">Next →</button>`}
@@ -374,7 +365,7 @@ async function locS(pg){
   let u=`https://www.loc.gov/search/?q=${enc(q)}&fo=json&c=20&sp=${lp}`;
   if(f&&t)u+=`&dates=${f}/${t}`;else if(f)u+=`&dates=${f}/9999`;else if(t)u+=`&dates=0/${t}`;
   if(fmt)u+=`&fa=original-format:${enc(fmt)}`;
-  try{rLoc(await corsFetch(u))}catch(e){errH('loc-r',e)}
+  try{rLoc(await corsFetch(u))}catch(e){locErr('loc-r',q,u)}
   btnD($('loc-b'),false)
 }
 function rLoc(d){
@@ -402,7 +393,7 @@ async function caS(pg){
   let u=`https://www.loc.gov/collections/chronicling-america/?dl=page&q=${enc(q)}&fo=json&c=20&sp=${cap}`;
   if(f)u+=`&start_date=${f}-01-01`;if(t)u+=`&end_date=${t}-12-31`;
   if(st)u+=`&fa=location_state:${enc(st)}`;
-  try{rCa(await corsFetch(u))}catch(e){errH('ca-r',e)}
+  try{rCa(await corsFetch(u))}catch(e){locErr('ca-r',q,u)}
   btnD($('ca-b'),false)
 }
 function rCa(d){
