@@ -345,7 +345,7 @@ function esc(s){if(!s)return'';const d=document.createElement('div');d.textConte
 function tog(id){$(id).classList.toggle('visible')}
 function cpy(id){const el=$(id);const t=el.querySelector('pre').textContent;navigator.clipboard.writeText(t).then(()=>{const b=el.querySelector('.tm');const o=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=o,1500)})}
 function enc(s){return encodeURIComponent(s)}
-async function corsFetch(url){const r=await fetch('https://corsproxy.io/?'+enc(url));if(!r.ok)throw new Error('Request failed ('+r.status+')');return r.json()}
+async function corsFetch(url){const r=await fetch('https://api.allorigins.win/raw?url='+enc(url));if(!r.ok)throw new Error('Request failed ('+r.status+')');return r.json()}
 function btnD(el,dis){el.disabled=dis;el.textContent=dis?'Searching…':'Search'}
 function ld(n){return`<div class="loading"><span>Searching ${n}…</span></div>`}
 function ne(m){return`<div class="empty"><h2>${m||'No results'}</h2><p>Try broader keywords or adjust filters.</p></div>`}
