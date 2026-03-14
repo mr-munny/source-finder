@@ -7,8 +7,11 @@ export default {
       return new Response('Missing ?url= parameter', { status: 400 });
     }
 
-    if (!target.startsWith('https://www.loc.gov/')) {
-      return new Response('Forbidden', { status: 403 });
+    const ALLOWED_HOSTS = ['www.loc.gov', 'api.dp.la'];
+    let targetHost;
+    try { targetHost = new URL(target).hostname; } catch { return new Response('Invalid URL', { status: 400 }); }
+    if (!ALLOWED_HOSTS.includes(targetHost)) {
+      return new Response('Host not allowed', { status: 403 });
     }
 
     if (request.method === 'OPTIONS') {

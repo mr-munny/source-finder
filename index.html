@@ -345,7 +345,9 @@ function esc(s){if(!s)return'';const d=document.createElement('div');d.textConte
 function tog(id){$(id).classList.toggle('visible')}
 function cpy(id){const el=$(id);const t=el.querySelector('pre').textContent;navigator.clipboard.writeText(t).then(()=>{const b=el.querySelector('.tm');const o=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=o,1500)})}
 function enc(s){return encodeURIComponent(s)}
-async function corsFetch(url){const r=await fetch(url);if(!r.ok)throw new Error('Request failed ('+r.status+')');return r.json()}
+const PROXY_BASE='https://source-finder-proxy.throbbing-waterfall-52d5.workers.dev';// After deploying the Cloudflare Worker, paste its URL here (e.g. 'https://source-finder-proxy.yourname.workers.dev')
+function proxyUrl(url){const base=PROXY_BASE||'/proxy';return base+'?url='+encodeURIComponent(url)}
+async function corsFetch(url){const r=await fetch(proxyUrl(url));if(!r.ok)throw new Error('Request failed ('+r.status+')');return r.json()}
 function btnD(el,dis){el.disabled=dis;el.textContent=dis?'Searching…':'Search'}
 function ld(n){return`<div class="loading"><span>Searching ${n}…</span></div>`}
 function ne(m){return`<div class="empty"><h2>${m||'No results'}</h2><p>Try broader keywords or adjust filters.</p></div>`}
@@ -485,7 +487,7 @@ async function dplaS(pg){
   btnD($('dpla-b'),true);$('dpla-r').innerHTML=ld('DPLA');$('dpla-pg').style.display='none';$('dpla-st').textContent='';
   let u=`https://api.dp.la/v2/items?q=${enc(q)}&api_key=${KEYS.dpla}&page_size=20&page=${dp}`;
   if(tp)u+=`&sourceResource.type=${enc(tp)}`;
-  try{rDpla(await(await fetch(u)).json())}catch(e){errH('dpla-r',e)}
+  try{rDpla(await(await fetch(proxyUrl(u))).json())}catch(e){errH('dpla-r',e)}
   btnD($('dpla-b'),false)
 }
 function rDpla(d){
