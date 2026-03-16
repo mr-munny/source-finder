@@ -105,6 +105,7 @@
   .tg.ft{background:#DBEAFE;color:#1D4ED8}.tg.pd{background:#D1FAE5;color:#059669}.tg.st{background:#ECFDF5;color:#047857}.tg.dt{background:#EDE9FE;color:#7C3AED}
   .ra{margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .al{font-family:var(--font-mono);font-size:.64rem;color:var(--link);text-decoration:none;text-transform:uppercase;letter-spacing:.04em}.al:hover{text-decoration:underline}
+  .no-link{font-family:var(--font-mono);font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;font-style:italic}
   .me{margin-top:8px;padding:9px 11px;background:#FAFAF8;border:1px dashed var(--card-border);border-radius:var(--radius-sm);display:none}
   .me.visible{display:block}
   .me pre{font-family:var(--font-mono);font-size:.64rem;color:var(--text);white-space:pre-wrap;word-break:break-word;line-height:1.5}
@@ -385,6 +386,9 @@ function ne(m){return`<div class="empty"><h2>${m||'No results'}</h2><p>Try broad
 function errH(id,e){$(id).innerHTML=`<div class="empty"><h2>Error</h2><p>${e.message}. Wait a moment and try again.</p></div>`}
 function locErr(id,q,u){const hu=u.replace('&fo=json','');$(id).innerHTML=`<div class="empty"><h2>LOC is temporarily blocking API requests</h2><p>The Library of Congress has extra security enabled right now. You can <a href="${hu}" target="_blank" rel="noopener" style="color:var(--link)">search LOC directly for "${esc(q)}"</a> in a new tab.</p></div>`}
 function card(thumb,body){return`<div class="rc"><div class="rt">${thumb||'<span class="ni">No image</span>'}</div><div class="rb">${body}</div></div>`}
+function hasUrl(u){return u&&u!=='#'}
+function linkTit(u,t){return hasUrl(u)?`<a href="${u}" target="_blank">${esc(t)}</a>`:esc(t)}
+function viewBtn(u,label){return hasUrl(u)?`<a href="${u}" target="_blank" class="al">${label||'View'} →</a>`:'<span class="no-link">No link available</span>'}
 function imgT(url){return url?`<img src="${url}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='<span class=ni>No image</span>'">`:''}
 function pag(id,show,prev,next,fn,cur){if(!show){$(id).style.display='none';return}$(id).style.display='flex';$(id).innerHTML=`<button class="pgb" ${prev?'':'disabled'} onclick="${fn(cur-1)}">← Prev</button><button class="pgb" ${next?'':'disabled'} onclick="${fn(cur+1)}">Next →</button>`}
 
@@ -411,7 +415,7 @@ function rLoc(d){
       url=i.url||i.id||'#',lu=url.startsWith('http')?url:'https://www.loc.gov'+url,
       th=i.image_url?i.image_url[0]:null,tu=th?(th.startsWith('//')?'https:'+th:th):null,
       m=[`Title: ${tit}`,cr.length?`Creator: ${cr.join('; ')}`:0,dt?`Date: ${dt}`:0,fmts.length?`Format: ${fmts.join(', ')}`:0,subj.length?`Subjects: ${subj.join('; ')}`:0,`URL: ${lu}`].filter(Boolean).join('\n');
-    return card(imgT(tu),`<div class="rtt"><a href="${lu}" target="_blank">${esc(tit)}</a></div><div class="rm">${dt?`<span>📅 ${esc(dt)}</span>`:''}${cr.length?`<span>✍️ ${esc(cr.join('; '))}</span>`:''}</div>${desc?`<div class="rd">${esc(desc)}</div>`:''}<div class="tags">${fmts.map(f=>`<span class="tg ft">${esc(f)}</span>`).join('')}${subj.map(s=>`<span class="tg">${esc(s)}</span>`).join('')}</div><div class="ra"><a href="${lu}" target="_blank" class="al">View →</a><button class="tm" onclick="tog('lm${x}')">Metadata ↓</button></div><div class="me" id="lm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('lm${x}')">Copy</button></div>`)
+    return card(imgT(tu),`<div class="rtt">${linkTit(lu,tit)}</div><div class="rm">${dt?`<span>📅 ${esc(dt)}</span>`:''}${cr.length?`<span>✍️ ${esc(cr.join('; '))}</span>`:''}</div>${desc?`<div class="rd">${esc(desc)}</div>`:''}<div class="tags">${fmts.map(f=>`<span class="tg ft">${esc(f)}</span>`).join('')}${subj.map(s=>`<span class="tg">${esc(s)}</span>`).join('')}</div><div class="ra">${viewBtn(lu,'View')}<button class="tm" onclick="tog('lm${x}')">Metadata ↓</button></div><div class="me" id="lm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('lm${x}')">Copy</button></div>`)
   }).join('');
   pag('loc-pg',tot>20,lp>1,pg.next,x=>`locS(${x})`,lp)
 }
@@ -440,7 +444,7 @@ function rCa(d){
       loc=(i.location||[]).slice(0,2),
       desc=i.description?(Array.isArray(i.description)?i.description.join(' '):i.description).substring(0,300):'',
       m=[`Title: ${tit}`,dt?`Date: ${dt}`:0,loc.length?`Location: ${loc.join('; ')}`:0,`URL: ${lu}`].filter(Boolean).join('\n');
-    return card(imgT(tu),`<div class="rtt"><a href="${lu}" target="_blank">${esc(tit)}</a></div><div class="rm">${dt?`<span>📅 ${esc(dt)}</span>`:''}${loc.length?`<span>📍 ${esc(loc.join(', '))}</span>`:''}</div>${desc?`<div class="rd">${esc(desc)}</div>`:''}<div class="tags"><span class="tg ft">Newspaper</span></div><div class="ra"><a href="${lu}" target="_blank" class="al">View Page →</a><button class="tm" onclick="tog('cm${x}')">Metadata ↓</button></div><div class="me" id="cm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('cm${x}')">Copy</button></div>`)
+    return card(imgT(tu),`<div class="rtt">${linkTit(lu,tit)}</div><div class="rm">${dt?`<span>📅 ${esc(dt)}</span>`:''}${loc.length?`<span>📍 ${esc(loc.join(', '))}</span>`:''}</div>${desc?`<div class="rd">${esc(desc)}</div>`:''}<div class="tags"><span class="tg ft">Newspaper</span></div><div class="ra">${viewBtn(lu,'View Page')}<button class="tm" onclick="tog('cm${x}')">Metadata ↓</button></div><div class="me" id="cm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('cm${x}')">Copy</button></div>`)
   }).join('');
   pag('ca-pg',tot>20,cap>1,pg.next,x=>`caS(${x})`,cap)
 }
@@ -503,7 +507,7 @@ function rSi(d){
   $('si-r').innerHTML=rows.map((r,x)=>{
     const d=sX(r),
       m=[`Title: ${d.title}`,d.nm.length?`Creator: ${d.nm.join('; ')}`:0,d.dt?`Date: ${d.dt}`:0,d.pl.length?`Place: ${d.pl.join('; ')}`:0,d.ph?`Description: ${d.ph}`:0,`Museum: ${d.un}`,d.tp.length?`Topics: ${d.tp.join('; ')}`:0,`URL: ${d.su}`,d.fi?`Image: ${d.fi}`:0].filter(Boolean).join('\n');
-    return card(imgT(d.tu),`<div class="rtt"><a href="${d.su}" target="_blank">${esc(d.title)}</a></div><div class="rm">${d.nm.length?`<span>✍️ ${esc(d.nm.slice(0,2).join('; '))}</span>`:''}${d.dt?`<span>📅 ${esc(d.dt)}</span>`:''}${d.pl.length?`<span>📍 ${esc(d.pl[0])}</span>`:''}</div>${d.ph||d.nt?`<div class="rd">${esc(d.ph||d.nt)}</div>`:''}<div class="tags"><span class="tg st">${esc(d.un)}</span>${d.ot.map(t=>`<span class="tg ft">${esc(t)}</span>`).join('')}${d.tp.slice(0,2).map(t=>`<span class="tg">${esc(t)}</span>`).join('')}</div><div class="ra"><a href="${d.su}" target="_blank" class="al">View →</a>${d.fi?`<a href="${d.fi}" target="_blank" class="al">Full Image →</a>`:''}<button class="tm" onclick="tog('sm${x}')">Metadata ↓</button></div><div class="me" id="sm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('sm${x}')">Copy</button></div>`)
+    return card(imgT(d.tu),`<div class="rtt">${linkTit(d.su,d.title)}</div><div class="rm">${d.nm.length?`<span>✍️ ${esc(d.nm.slice(0,2).join('; '))}</span>`:''}${d.dt?`<span>📅 ${esc(d.dt)}</span>`:''}${d.pl.length?`<span>📍 ${esc(d.pl[0])}</span>`:''}</div>${d.ph||d.nt?`<div class="rd">${esc(d.ph||d.nt)}</div>`:''}<div class="tags"><span class="tg st">${esc(d.un)}</span>${d.ot.map(t=>`<span class="tg ft">${esc(t)}</span>`).join('')}${d.tp.slice(0,2).map(t=>`<span class="tg">${esc(t)}</span>`).join('')}</div><div class="ra">${viewBtn(d.su,'View')}${d.fi?`<a href="${d.fi}" target="_blank" class="al">Full Image →</a>`:''}<button class="tm" onclick="tog('sm${x}')">Metadata ↓</button></div><div class="me" id="sm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('sm${x}')">Copy</button></div>`)
   }).join('');
   if(tp>1){$('si-pg').style.display='flex';$('si-pg').innerHTML=`<button class="pgb" ${ss>0?'':'disabled'} onclick="siS(${ss-SR})">← Prev</button><button class="pgb" ${cp<tp?'':'disabled'} onclick="siS(${ss+SR})">Next →</button>`}else $('si-pg').style.display='none'
 }
@@ -537,7 +541,7 @@ function rDpla(d){
       viewUrl=i.isShownAt||'#',tu=i.object||null,
       spatial=sr.spatial?(Array.isArray(sr.spatial)?sr.spatial[0]?.name||'':''):'',
       m=[`Title: ${tit}`,creator?`Creator: ${creator}`:0,dt?`Date: ${dt}`:0,spatial?`Place: ${spatial}`:0,desc?`Description: ${(desc+'').substring(0,300)}`:0,dataProvider?`Source: ${dataProvider}`:0,`URL: ${viewUrl}`].filter(Boolean).join('\n');
-    return card(imgT(tu),`<div class="rtt"><a href="${viewUrl}" target="_blank">${esc(tit)}</a></div><div class="rm">${creator?`<span>✍️ ${esc(creator)}</span>`:''}${dt?`<span>📅 ${esc(dt)}</span>`:''}${spatial?`<span>📍 ${esc(spatial)}</span>`:''}</div>${desc?`<div class="rd">${esc((desc+'').substring(0,260))}</div>`:''}<div class="tags">${dataProvider?`<span class="tg dt">${esc(dataProvider.length>35?dataProvider.substring(0,35)+'…':dataProvider)}</span>`:''}${types.map(t=>`<span class="tg ft">${esc(t)}</span>`).join('')}${subj.map(s=>`<span class="tg">${esc(typeof s==='string'?s:s.name||'')}</span>`).join('')}</div><div class="ra"><a href="${viewUrl}" target="_blank" class="al">View Original →</a><button class="tm" onclick="tog('dm${x}')">Metadata ↓</button></div><div class="me" id="dm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('dm${x}')">Copy</button></div>`)
+    return card(imgT(tu),`<div class="rtt">${linkTit(viewUrl,tit)}</div><div class="rm">${creator?`<span>✍️ ${esc(creator)}</span>`:''}${dt?`<span>📅 ${esc(dt)}</span>`:''}${spatial?`<span>📍 ${esc(spatial)}</span>`:''}</div>${desc?`<div class="rd">${esc((desc+'').substring(0,260))}</div>`:''}<div class="tags">${dataProvider?`<span class="tg dt">${esc(dataProvider.length>35?dataProvider.substring(0,35)+'…':dataProvider)}</span>`:''}${types.map(t=>`<span class="tg ft">${esc(t)}</span>`).join('')}${subj.map(s=>`<span class="tg">${esc(typeof s==='string'?s:s.name||'')}</span>`).join('')}</div><div class="ra">${viewBtn(viewUrl,'View Original')}<button class="tm" onclick="tog('dm${x}')">Metadata ↓</button></div><div class="me" id="dm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('dm${x}')">Copy</button></div>`)
   }).join('');
   pag('dpla-pg',tp>1,dp>1,dp<tp,x=>`dplaS(${x})`,dp)
 }
@@ -571,7 +575,7 @@ async function metS(pg){
         tu=i.primaryImageSmall||null,fi=i.primaryImage||null,
         tags=(i.tags||[]).slice(0,3).map(t=>t.term||t),
         m=[`Title: ${t}`,`Artist: ${a}`,dt?`Date: ${dt}`:0,cul?`Culture: ${cul}`:0,per?`Period: ${per}`:0,med?`Medium: ${med}`:0,dept?`Department: ${dept}`:0,geo?`Geography: ${geo}`:0,pd?'Rights: Public Domain (CC0)':'Rights: Restricted',`URL: ${au}`,fi?`Image: ${fi}`:0].filter(Boolean).join('\n');
-      return card(imgT(tu),`<div class="rtt"><a href="${au}" target="_blank">${esc(t)}</a></div><div class="rm"><span>🎨 ${esc(a)}</span>${dt?`<span>📅 ${esc(dt)}</span>`:''}${geo?`<span>📍 ${esc(geo)}</span>`:''}</div>${med?`<div class="rd">${esc(med)}</div>`:''}<div class="tags">${pd?'<span class="tg pd">Public Domain</span>':''}${dept?`<span class="tg ft">${esc(dept)}</span>`:''}${cul?`<span class="tg">${esc(cul)}</span>`:''}${cls?`<span class="tg">${esc(cls)}</span>`:''}${tags.map(t=>`<span class="tg">${esc(t)}</span>`).join('')}</div><div class="ra"><a href="${au}" target="_blank" class="al">View →</a>${fi?`<a href="${fi}" target="_blank" class="al">Full Image →</a>`:''}<button class="tm" onclick="tog('mm${x}')">Metadata ↓</button></div><div class="me" id="mm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('mm${x}')">Copy</button></div>`)
+      return card(imgT(tu),`<div class="rtt">${linkTit(au,t)}</div><div class="rm"><span>🎨 ${esc(a)}</span>${dt?`<span>📅 ${esc(dt)}</span>`:''}${geo?`<span>📍 ${esc(geo)}</span>`:''}</div>${med?`<div class="rd">${esc(med)}</div>`:''}<div class="tags">${pd?'<span class="tg pd">Public Domain</span>':''}${dept?`<span class="tg ft">${esc(dept)}</span>`:''}${cul?`<span class="tg">${esc(cul)}</span>`:''}${cls?`<span class="tg">${esc(cls)}</span>`:''}${tags.map(t=>`<span class="tg">${esc(t)}</span>`).join('')}</div><div class="ra">${viewBtn(au,'View')}${fi?`<a href="${fi}" target="_blank" class="al">Full Image →</a>`:''}<button class="tm" onclick="tog('mm${x}')">Metadata ↓</button></div><div class="me" id="mm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('mm${x}')">Copy</button></div>`)
     }).join(''):ne('No public domain results on this page — try next page');
     pag('met-pg',tp>1,mp>1,mp<tp,x=>`metS(${x})`,mp)
   }catch(e){errH('met-r',e)}
