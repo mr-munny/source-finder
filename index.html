@@ -14,7 +14,7 @@
     --header-bg:#18181B;--header-text:#E4E4E7;
     --tag-bg:#F3F4F6;--tag-text:#4B5563;--link:#1D4ED8;
     --tab-inactive:#9CA3AF;
-    --c-loc:#B45309;--c-aic:#BE185D;--c-si:#059669;--c-dpla:#7C3AED;
+    --c-loc:#B45309;--c-aic:#BE185D;--c-si:#059669;--c-dpla:#7C3AED;--c-met:#C41E3A;
     --font-serif:'Newsreader','Georgia',serif;
     --font-mono:'Overpass Mono',monospace;
     --radius:10px;--radius-sm:6px;
@@ -65,6 +65,7 @@
   .tab.a-aic{color:var(--c-aic);border-bottom-color:var(--c-aic)}
   .tab.a-si{color:var(--c-si);border-bottom-color:var(--c-si)}
   .tab.a-dpla{color:var(--c-dpla);border-bottom-color:var(--c-dpla)}
+  .tab.a-met{color:var(--c-met);border-bottom-color:var(--c-met)}
   .tp{display:none}.tp.active{display:block}
 
   .stabs{display:flex;gap:0;margin-bottom:20px;margin-top:4px;border-bottom:1px solid var(--card-border)}
@@ -151,7 +152,7 @@
   </div>
 
   <div class="setup-note">
-    LOC and Art Institute of Chicago require no keys — they work immediately.<br>
+    LOC, Art Institute of Chicago, and The Met require no keys — they work immediately.<br>
     Keys are saved in this browser's localStorage. Clear them anytime from the ⚙ menu.
   </div>
 
@@ -168,6 +169,7 @@
   <button class="tab a-loc" id="t-loc" onclick="mainTab('loc')">Library of Congress</button>
   <button class="tab" id="t-aic" onclick="mainTab('aic')">Art Inst. Chicago</button>
   <button class="tab" id="t-si" onclick="mainTab('si')">Smithsonian</button>
+  <button class="tab" id="t-met" onclick="mainTab('met')">The Met</button>
   <button class="tab" id="t-dpla" onclick="mainTab('dpla')">DPLA</button>
 </div>
 
@@ -265,6 +267,34 @@
 <div id="si-st" class="status"></div><div id="si-r" class="results"><div class="empty"><h2>Search the Smithsonian</h2><p>5+ million items across 21 museums.</p></div></div><div id="si-pg" class="pg" style="display:none"></div>
 </div>
 
+<!-- MET -->
+<div class="tp" id="p-met">
+<div class="sp">
+  <div class="presets">
+    <button class="pb" onclick="metP('ancient egypt pharaoh')">Ancient Egypt</button>
+    <button class="pb" onclick="metP('greek roman sculpture')">Greek & Roman</button>
+    <button class="pb" onclick="metP('medieval armor weapons')">Medieval Arms</button>
+    <button class="pb" onclick="metP('Japanese woodblock ukiyo-e')">Japanese Prints</button>
+    <button class="pb" onclick="metP('impressionism Monet')">Impressionism</button>
+    <button class="pb" onclick="metP('Islamic calligraphy')">Islamic Art</button>
+    <button class="pb" onclick="metP('Renaissance painting')">Renaissance</button>
+    <button class="pb" onclick="metP('African mask sculpture')">African Art</button>
+    <button class="pb" onclick="metP('Chinese landscape painting')">Chinese Painting</button>
+    <button class="pb" onclick="metP('American colonial portrait')">Colonial America</button>
+    <button class="pb" onclick="metP('photograph Civil War')">Civil War Photos</button>
+    <button class="pb" onclick="metP('ancient Mesopotamia')">Mesopotamia</button>
+  </div>
+  <div class="sr"><input type="text" class="si" id="met-q" placeholder="Search 490,000+ artworks at The Met…" onkeydown="if(event.key==='Enter')metS()"><button class="sb" id="met-b" onclick="metS()">Search</button></div>
+  <div class="sr">
+    <select id="met-dept"><option value="">All Departments</option></select>
+    <div class="cr"><input type="checkbox" id="met-img" checked><label for="met-img">With images only</label></div>
+    <div class="cr"><input type="checkbox" id="met-pd"><label for="met-pd">Public domain</label></div>
+    <div class="cr"><input type="checkbox" id="met-hl"><label for="met-hl">Highlights</label></div>
+  </div>
+</div>
+<div id="met-st" class="status"></div><div id="met-r" class="results"><div class="empty"><h2>Search The Metropolitan Museum of Art</h2><p>490,000+ works spanning 5,000 years of world culture. No API key required.</p></div></div><div id="met-pg" class="pg" style="display:none"></div>
+</div>
+
 <!-- DPLA -->
 <div class="tp" id="p-dpla">
 <div id="dpla-warn"></div>
@@ -291,6 +321,7 @@
 
 <div class="disc">
   Library of Congress data via the loc.gov JSON API. Art Institute of Chicago via the AIC Public API.<br>
+  The Met Collection via the Metropolitan Museum of Art Collection API (CC0 open access).<br>
   Smithsonian data via the Smithsonian Open Access API (no endorsement implied by the Smithsonian Institution).<br>
   DPLA data via the Digital Public Library of America API. Built for educational source curation.
 </div>
@@ -509,6 +540,42 @@ function rDpla(d){
     return card(imgT(tu),`<div class="rtt"><a href="${viewUrl}" target="_blank">${esc(tit)}</a></div><div class="rm">${creator?`<span>✍️ ${esc(creator)}</span>`:''}${dt?`<span>📅 ${esc(dt)}</span>`:''}${spatial?`<span>📍 ${esc(spatial)}</span>`:''}</div>${desc?`<div class="rd">${esc((desc+'').substring(0,260))}</div>`:''}<div class="tags">${dataProvider?`<span class="tg dt">${esc(dataProvider.length>35?dataProvider.substring(0,35)+'…':dataProvider)}</span>`:''}${types.map(t=>`<span class="tg ft">${esc(t)}</span>`).join('')}${subj.map(s=>`<span class="tg">${esc(typeof s==='string'?s:s.name||'')}</span>`).join('')}</div><div class="ra"><a href="${viewUrl}" target="_blank" class="al">View Original →</a><button class="tm" onclick="tog('dm${x}')">Metadata ↓</button></div><div class="me" id="dm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('dm${x}')">Copy</button></div>`)
   }).join('');
   pag('dpla-pg',tp>1,dp>1,dp<tp,x=>`dplaS(${x})`,dp)
+}
+
+// ══════════ MET ══════════
+let mp=1,mIDs=[],mDepts=[];
+const MET='https://collectionapi.metmuseum.org/public/collection/v1';
+(async function(){try{const d=await(await fetch(MET+'/departments')).json();mDepts=d.departments||[];const sel=$('met-dept');mDepts.forEach(dp=>{const o=document.createElement('option');o.value=dp.departmentId;o.textContent=dp.displayName;sel.appendChild(o)})}catch(e){}})();
+function metP(q){$('met-q').value=q;metS()}
+async function metS(pg){
+  const q=$('met-q').value.trim();if(!q)return;mp=pg||1;
+  btnD($('met-b'),true);$('met-r').innerHTML=ld('The Met');$('met-pg').style.display='none';$('met-st').textContent='';
+  try{
+    let u=`${MET}/search?q=${enc(q)}`;
+    if($('met-img').checked)u+='&hasImages=true';
+    if($('met-hl').checked)u+='&isHighlight=true';
+    const dept=$('met-dept').value;if(dept)u+=`&departmentId=${dept}`;
+    if(mp===1){const sr=await(await fetch(u)).json();mIDs=sr.objectIDs||[]}
+    if(!mIDs.length){$('met-r').innerHTML=ne('No artworks found');btnD($('met-b'),false);return}
+    const ps=20,start=(mp-1)*ps,batch=mIDs.slice(start,start+ps),tp=Math.ceil(mIDs.length/ps);
+    const objs=await Promise.all(batch.map(id=>fetch(`${MET}/objects/${id}`).then(r=>r.json()).catch(()=>null)));
+    const items=objs.filter(o=>o&&o.objectID);
+    let filtered=items;
+    if($('met-pd').checked)filtered=filtered.filter(o=>o.isPublicDomain);
+    $('met-st').innerHTML=`<strong>${mIDs.length.toLocaleString()}</strong> results — page <strong>${mp}</strong> of ${tp.toLocaleString()}`;
+    $('met-r').innerHTML=filtered.length?filtered.map((i,x)=>{
+      const t=i.title||'Untitled',a=i.artistDisplayName||'Unknown',dt=i.objectDate||'',
+        med=i.medium||'',dept=i.department||'',cls=i.classification||'',cul=i.culture||'',
+        per=i.period||'',geo=[i.city,i.country].filter(Boolean).join(', '),
+        pd=i.isPublicDomain,au=i.objectURL||'#',
+        tu=i.primaryImageSmall||null,fi=i.primaryImage||null,
+        tags=(i.tags||[]).slice(0,3).map(t=>t.term||t),
+        m=[`Title: ${t}`,`Artist: ${a}`,dt?`Date: ${dt}`:0,cul?`Culture: ${cul}`:0,per?`Period: ${per}`:0,med?`Medium: ${med}`:0,dept?`Department: ${dept}`:0,geo?`Geography: ${geo}`:0,pd?'Rights: Public Domain (CC0)':'Rights: Restricted',`URL: ${au}`,fi?`Image: ${fi}`:0].filter(Boolean).join('\n');
+      return card(imgT(tu),`<div class="rtt"><a href="${au}" target="_blank">${esc(t)}</a></div><div class="rm"><span>🎨 ${esc(a)}</span>${dt?`<span>📅 ${esc(dt)}</span>`:''}${geo?`<span>📍 ${esc(geo)}</span>`:''}</div>${med?`<div class="rd">${esc(med)}</div>`:''}<div class="tags">${pd?'<span class="tg pd">Public Domain</span>':''}${dept?`<span class="tg ft">${esc(dept)}</span>`:''}${cul?`<span class="tg">${esc(cul)}</span>`:''}${cls?`<span class="tg">${esc(cls)}</span>`:''}${tags.map(t=>`<span class="tg">${esc(t)}</span>`).join('')}</div><div class="ra"><a href="${au}" target="_blank" class="al">View →</a>${fi?`<a href="${fi}" target="_blank" class="al">Full Image →</a>`:''}<button class="tm" onclick="tog('mm${x}')">Metadata ↓</button></div><div class="me" id="mm${x}"><pre>${esc(m)}</pre><button class="tm" onclick="cpy('mm${x}')">Copy</button></div>`)
+    }).join(''):ne('No public domain results on this page — try next page');
+    pag('met-pg',tp>1,mp>1,mp<tp,x=>`metS(${x})`,mp)
+  }catch(e){errH('met-r',e)}
+  btnD($('met-b'),false)
 }
 </script>
 </body>
